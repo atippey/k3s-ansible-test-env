@@ -5,6 +5,7 @@ FROM jrei/systemd-ubuntu:noble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
+ENV ANSIBLE_INVENTORY=/project/dnd/inventory.yml
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
