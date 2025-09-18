@@ -17,6 +17,8 @@ services:
     tmpfs:
       - /tmp
       - /run
+    environment:
+      - DO_INIT=${DO_INIT:-''}
     entrypoint: ['/project/dnd/ansible_install.sh']
     depends_on:
     - server-0
