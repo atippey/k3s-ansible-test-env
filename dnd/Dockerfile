@@ -1,5 +1,5 @@
 # K3s Test Node - Base image for Docker-based k3s testing
-FROM jrei/systemd-ubuntu:noble
+FROM jrei/systemd-ubuntu:noble AS k3s
 
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     docker.io \
     # K3s dependencies
     curl \
-    wget \
     iptables \
     # Network tools
     net-tools \
@@ -24,7 +23,6 @@ RUN apt-get update && apt-get install -y \
     # Sudo for privilege escalation
     sudo \
     python3-pip \
-    python3-virtualenv \
     python-is-python3 \
     # Clean up
     && apt-get clean \
@@ -79,3 +77,42 @@ RUN systemctl enable ssh \
 EXPOSE 22
 
 CMD ["/lib/systemd/systemd"]
+
+FROM ubuntu:24.04 AS control
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV ANSIBLE_INVENTORY=/project/dnd/inventory.yml
+
+RUN apt-get update && apt-get install -y \
+    openssh-client \
+    python3-pip \
+    curl \
+    python3-virtualenv \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+RUN virtualenv venv
+RUN . venv/bin/activate \
+    && pip install --no-cache ansible
+
+RUN cat <<EOF >/usr/local/sbin/ansible_install.sh
+#!/bin/bash
+
+. /venv/bin/activate
+
+echo "K3S_INIT: $K3S_INIT"
+if [[ -n "\$K3S_INIT" ]]; then
+    ansible-playbook playbooks/site.yml -i dnd/inventory.yml
+fi
+
+echo Leaving container up for ansible control!
+while true; do sleep 15; done
+EOF
+RUN chmod +x /usr/local/sbin/ansible_install.sh
+
+VOLUME [ "/project" ]
+WORKDIR /project
+
+ENTRYPOINT [ "/usr/local/sbin/ansible_install.sh"]

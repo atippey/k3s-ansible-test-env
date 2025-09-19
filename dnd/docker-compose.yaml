@@ -1,8 +1,9 @@
 services:
   ansible:
-    image: k3s-test-node
+    image: ansible-control-node
     build:
       context: .
+      target: control
     hostname: ansible-control
     privileged: true
     cgroup: host
@@ -19,7 +20,6 @@ services:
       - /run
     environment:
       - K3S_INIT=${K3S_INIT:-TRUE}
-    entrypoint: ['/project/dnd/ansible_install.sh']
     depends_on:
     - server-0
     - agent-0
@@ -30,6 +30,7 @@ services:
     image: k3s-test-node
     build:
       context: .
+      target: k3s
     hostname: server-0
     privileged: true
     cgroup: host
@@ -55,6 +56,7 @@ services:
     image: k3s-test-node
     build:
       context: .
+      target: k3s
     hostname: agent-0
     privileged: true
     cgroup: host
@@ -80,6 +82,7 @@ services:
     image: k3s-test-node
     build:
       context: .
+      target: k3s
     hostname: agent-1
     privileged: true
     cgroup: host
